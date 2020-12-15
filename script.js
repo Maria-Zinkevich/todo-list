@@ -1,85 +1,81 @@
 'use strict';
 
-const header = document.querySelector('.header__input'),
-    headerInput = document.querySelector('.header__input'),
-    todoListUnchecked = document.querySelector('.todo__list--unchecked'),
-    todoListChecked = document.querySelector('.todo__list--checked'),
-    headerBtn = document.querySelector('.header__button')
+const todoControl = document.querySelector('.todo-control'),
+    headerInput = document.querySelector('.header-input'),
+    todoList = document.querySelector('.todo-list'),
+    todoCompleted = document.querySelector('.todo-completed'),
+    addHeaderBtn = document.querySelector('#add');
 
-const todoDataList = [] //массив для всех дел
+let todoData = [];
+const getInfoTodoData = function(){
+    if(JSON.parse(localStorage.getItem('todoData'))) {
+        todoData = JSON.parse(localStorage.getItem('todoData'));
+    } else {
+        return;
+    }
+};
 
-function addTodoData() {
-    todoListUnchecked.textContent = ''//очищаю список от предыдущих дел
-    todoListChecked.textContent = ''//очищаю список от предыдущих дел
+getInfoTodoData();
 
-    //с помощью перебора массива добавляю каждое дело из этого массива на страницу
-    todoDataList.forEach(function(item) {
-        const liChecked = document.createElement('li')
-        const liUnchecked = document.createElement('li')
-        liUnchecked.classList.add('todo__item')
-        liChecked.classList.add('todo__item')
+const render = function() {
+    todoList.textContent = '';
+    todoCompleted.textContent = '';
 
-        liUnchecked.innerHTML = '<span class="todo__text">' + item.value + '</span>' +
-            '<div class="todo__buttons">' +
-                '<button class="todo__remove"></button>' +
-                '<button class="todo__complete"></button>' +
-            '</div>'
+    todoData.forEach(function(item){
+        const li = document.createElement('li');
+        li.classList.add('todo-item');
 
-        liChecked.innerHTML = '<span class="todo__text">' + item.value + '</span>' +
-            '<div class="todo__buttons">' +
-                '<button class="todo__remove"></button>' +
-                '<button class="todo__completed"></button>' +
-            '</div>'
+        li.insertAdjacentHTML('afterbegin', `<span class="text-todo"> ${item.value}</span>
+            <div class="todo-buttons">
+            <button class="todo-remove"></button>
+            <button class="todo-complete"></button>
+            </div>`);
 
-        //проверка в какой список добавлять элементы
-        item.completed ? todoListChecked.append(liChecked) : todoListUnchecked.append(liUnchecked)
-        switchList()
-    })
-    // добавляю дело в localestorage
-    localStorage.setItem('todoDataList', JSON.stringify(todoDataList))
-}
+        if(item.completed) {
+            todoCompleted.append(li);
+        } else {
+            todoList.append(li);
+        }
 
-//добавление значения из инпута в массив дел
-headerBtn.addEventListener('click', function() {
+        const btnTodoComplete = li.querySelector('.todo-complete');
+        btnTodoComplete.addEventListener('click', function(){
+            item.completed = !item.completed;
+            render();
+        });
+            
+        const btnTodoRemove = li.querySelector('.todo-remove');
+        btnTodoRemove.addEventListener('click', function(){
+            todoData.splice(todoData.indexOf(item), 1); 
+            render();
+        });
+
+    });
+
+    localStorage.setItem('todoData', JSON.stringify(todoData));
+};
+
+todoControl.addEventListener('submit', function(event) {
+    event.preventDefault();
+
     const newTodo = {
-      value: headerInput.value,
-      completed: false,
+        value: headerInput.value,
+        completed: false,
     };
-  
-    todoDataList.push(newTodo);
-    headerInput.value = ''//очищение инпута
-    addTodoData()
+
+    todoData.push(newTodo);
+    headerInput.value = '';
+    render();
+
 });
 
-function switchList() {
-    todoDataList.forEach(function(item) {
-        let btnTodoComplete = document.querySelector('.todo__complete')
-        let btnTodoCompleted = document.querySelector('.todo__completed')
-        let btnTodoRemove = document.querySelector('.todo__remove')
+addHeaderBtn.disabled = true;
+headerInput.addEventListener('input', () => {
+    if(headerInput.value === '') {
+        addHeaderBtn.disabled = true;
+    } else {
+        addHeaderBtn.disabled = false;
+    }
+});
 
-        if(!btnTodoComplete) {
-            return
-        } else {
-            btnTodoComplete.addEventListener('click', function(){
-                item.completed = !item.completed;//если true станет false, если false станет true
-                addTodoData()
-            });
-        }
-
-        if(btnTodoCompleted) {
-            btnTodoCompleted.addEventListener('click', function(){
-                item.completed = !item.completed;//если true станет false, если false станет true
-                addTodoData()
-            });
-        } else {
-            return
-        }
-       
-        btnTodoRemove.addEventListener('click', function(){
-            item.style.display = 'none'
-            localStorage.clear()
-            addTodoData()
-        });
-    })
-}
+render();
 
